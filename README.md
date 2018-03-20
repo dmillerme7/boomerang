@@ -1,5 +1,6 @@
-Copyright (c) 2011, Yahoo! Inc.  All rights reserved.
-Some code Copyright (c) 2012, Log-Normal Inc.  All rights reserved.
+Some code Copyright (c) 2011, Yahoo! Inc.  All rights reserved.
+Some code Copyright (c) 2011-2012, Log-Normal Inc.  All rights reserved.
+Most code Copyright (c) 2012-2016 SOASTA, Inc. All rights reserved.
 
 Copyrights licensed under the BSD License. See the accompanying LICENSE.txt file for terms.
 
@@ -8,7 +9,7 @@ boomerang always comes back, except when it hits something.
 summary
 ---
 
-[![Join the chat at https://gitter.im/lognormal/boomerang](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/lognormal/boomerang?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/SOASTA/boomerang](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/SOASTA/boomerang?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 boomerang is a JavaScript library that measures the page load time experienced by real users, commonly called RUM.
 
@@ -49,13 +50,14 @@ You could also include any other code you need.  For example, I include a timer 
 
 I call my plugin `zzz_init.js` to remind me to include it last in the plugin list
 
-### 2. Build boomerang using this plugin as the last one
+### 2. Build boomerang
+The build process picks up all the plugins referenced in the `plugins.json` file. To change the plugins included in the boomerang build, change the contents of the file to your needs.
 
 ```bash
-make PLUGINS="list.js of.js plugins.js zzz_init.js" MINIFIER="/path/to/your/js-minifier"
+grunt clean build
 ```
 
-This should create `boomerang-<version>.js`
+This creates deployable boomerang versions in the `build` directory, e.g. `build/boomerang-<version>.min.js`.
 
 Install this file on your web server or origin server where your CDN can pick it up.  Set a far future max-age header for it.  This file will never change.
 
@@ -93,9 +95,11 @@ For boomerang, this is the code you'll include:
 <script>
 (function(){
   var dom,doc,where,iframe = document.createElement('iframe');
-  iframe.src = "javascript:false";
-  (iframe.frameElement || iframe).style.cssText = "width: 0; height: 0; border: 0";
-  var where = document.getElementsByTagName('script')[0];
+  iframe.src = "javascript:void(0)";
+  iframe.title = "";
+  iframe.role = "presentation";
+  (iframe.frameElement || iframe).style.cssText = "width:0;height:0;border:0;display:none;";
+  where = document.currentScript || Array.prototype.slice.call(document.getElementsByTagName("script"), -1)[0];
   where.parentNode.insertBefore(iframe, where);
 
   try {
@@ -108,7 +112,7 @@ For boomerang, this is the code you'll include:
   doc.open()._l = function() {
     var js = this.createElement("script");
     if(dom) this.domain = dom;
-    js.id = "js-iframe-async";
+    js.id = "boomr-if-as";
     js.src = 'http://your-cdn.host.com/path/to/boomerang-<version>.js';
     this.body.appendChild(js);
   };
@@ -150,21 +154,52 @@ Opera (including Android, but not Opera Mini), Safari (including iOS), IE 6+ (bu
 
 Boomerang also fires the `onBeforeBoomerangBeacon` and `onBoomerangBeacon` events just before and during beaconing.
 
+#### 3.4. Method queue pattern
+
+If you want to call a public method that lives on `BOOMR`, but either don't know if Boomerang has loaded or don't want to wait, you can use the method queue pattern!
+
+Instead of:
+```javascript
+BOOMR.addVar('myVarName', 'myVarValue')
+```
+
+... you can write:
+```javascript
+BOOMR_mq = window.BOOMR_mq || [];
+BOOMR_mq.push(['addVar', 'myVarName', 'myVarValue']);
+```
+
+Or, if you care about the return value, instead of:
+```javascript
+var hasMyVar = BOOMR.hasVar('myVarName');
+```
+... you can write:
+```javascript
+var hasMyVar;
+BOOMR_mq = window.BOOMR_mq || [];
+BOOMR_mq.push({
+   arguments: ['hasVar', 'myVarName'],
+   callback: function(returnValue) {
+     hasMyVar = returnValue;
+   }
+});
+```
+
 docs
 ---
 Documentation is in the docs/ sub directory, and is written in HTML.  Your best bet is to check it out and view it locally, though it works best through a web server (you'll need cookies).
-Thanks to github's awesome `gh-pages` feature, we're able to host the boomerang docs right here on github.  Visit http://lognormal.github.com/boomerang/doc/ for a browsable version where all
+Thanks to github's awesome `gh-pages` feature, we're able to host the boomerang docs right here on github.  Visit http://soasta.github.com/boomerang/doc/ for a browsable version where all
 the examples work.
 
 In case you're browsing this elsewhere, the latest development version of the code and docs are available at https://github.com/bluesmoon/boomerang/, while the latest stable version is
-at https://github.com/lognormal/boomerang/
+at https://github.com/SOASTA/boomerang/
 
 support
 ---
-We use github issues for discussions, feature requests and bug reports.  Get in touch at https://github.com/lognormal/boomerang/issues
+We use github issues for discussions, feature requests and bug reports.  Get in touch at https://github.com/SOASTA/boomerang/issues
 You'll need a github account to participate, but then you'll need one to check out the code as well :)
 
 Thanks for dropping by, and please leave us a message telling us if you use boomerang.
 
-boomerang is supported by the devs at <a href="http://www.lognormal.com/">LogNormal</a>, and the awesome community of opensource developers that use
+boomerang is supported by the devs at <a href="http://soasta.com/">SOASTA</a>, and the awesome community of opensource developers that use
 and hack it.  That's you.  Thank you!
